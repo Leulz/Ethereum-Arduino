@@ -13,6 +13,7 @@ class TX
     std::string to;
     std::string value;
     std::string data;
+    int chainId;
     std::string v;
     std::string r;
     std::string s;

@@ -13,7 +13,16 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs" />
 				</Compiler>
+				<Linker>
+					<Add library="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs/ecdsa.so" />
+					<Add library="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs/bignum256.so" />
+					<Add library="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs/hmac_drbg.so" />
+					<Add library="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs/hash.so" />
+					<Add library="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs/sha256.so" />
+					<Add library="/home/leo/Ethereum-Arduino/Ethereum-Arduino/libs/endian.so" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Ethereum-Arduino" prefix_auto="1" extension_auto="1" />

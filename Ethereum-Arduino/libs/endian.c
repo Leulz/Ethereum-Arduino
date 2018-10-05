@@ -6,7 +6,7 @@
   */
 
 #include "common.h"
-#include "endian.h"
+#include "newendian.h"
 
 /** Write 32 bit unsigned integer into a byte array in big-endian format.
   * \param out The destination byte array. This must have space for at

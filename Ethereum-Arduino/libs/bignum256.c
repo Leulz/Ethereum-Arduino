@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <gmp.h>
-#include "endian.h"
+#include "newendian.h"
 #include "test_helpers.h"
 #endif // #ifdef TEST_BIGNUM256
 

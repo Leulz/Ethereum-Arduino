@@ -3,10 +3,14 @@
 #include <string>
 #include "libs/keccak.h"
 #include <memory.h>
+#include <stdlib.h>
 extern "C" {
     #include "libs/ecdsa.h"
     #include "libs/bignum256.h"
 }
+
+#define EIP_155_OFFSET 35
+
 uint8_t* charArrtoUint(char src[]){
     uint8_t dest[sizeof(src)];
     for(int i=0;i<sizeof(src);i++){
@@ -15,7 +19,7 @@ uint8_t* charArrtoUint(char src[]){
     return dest;
 }
 char* uintToCharArr(uint8_t src[], int len){
-    char dest[len];
+    char* dest = (char*) calloc(len,1);
     for(int i=0;i<len;i++){
         dest[i] = src[i];
     }
@@ -30,66 +34,100 @@ void splitArray(uint8_t src[], uint8_t dest[], uint8_t from, uint8_t to)
 		i++;
 	}
 }
+
+void hexstrToByteArray(const char hexstr[], size_t hexstr_size, uint8_t **pp_arr_out) {
+    const char *pos = hexstr;
+    size_t arr_size = hexstr_size/2, i;
+    uint8_t *p_arr = (uint8_t *) malloc(arr_size);
+    memset(p_arr,0,arr_size);
+
+    for(int i = 0; i<arr_size;++i) {
+        sscanf(pos, "%2hhx", &p_arr[i]);
+        pos+=2;
+    }
+
+    *pp_arr_out = p_arr;
+}
+
+void reverse(uint8_t *p_arr, size_t len) {
+    size_t i;
+    for(int i = 0; i<len/2; ++i) {
+        uint8_t tmp = p_arr[i];
+        p_arr[i] = p_arr[len-1-i];
+        p_arr[len-1-i] = tmp;
+    }
+}
+
+void fixHexValue(std::string &hex) {
+    if (hex.size() % 2 != 0) {
+        RLP rlp;
+        std::string tmp = rlp.removeHexFormatting(hex);
+        tmp = "0x0" + tmp;
+        hex = tmp;
+    }
+}
+
+void adjustTxValues(TX &tx) {
+    fixHexValue(tx.nonce);
+    fixHexValue(tx.gasPrice);
+    fixHexValue(tx.gasLimit);
+    fixHexValue(tx.to);
+    fixHexValue(tx.value);
+    fixHexValue(tx.data);
+    fixHexValue(tx.v);
+}
+
 int main(int argc, char** argv) {
     using namespace std;
 	RLP rlp;
 	TX tx;
-    tx.nonce="0xFF";
-    tx.gasPrice="0x09184e72a000";
-    tx.gasLimit="0x2710";
+    tx.nonce="0x5";
+    tx.gasPrice="0x210000";
+    tx.gasLimit="0x100000";
     tx.to="0x0000000000000000000000000000000000000000";
-    tx.value="0x00";
+    tx.value="0x10000000";
     tx.data="0x7f7465737432000000000000000000000000000000000000000000000000000000600057";
-    tx.v="";
+    tx.chainId = 15;
+    tx.v=rlp.intToHex(tx.chainId);//as per EIP 155
     tx.r="";
     tx.s="";
-   // std::cout << rlp.bytesToHex(rlp.hexToRlpEncode("0x01")) << std::endl;
-    string privkey = "e331b6d69882b4cb4ea581d88e0b604039a3de5967688d3dcffdd2270c0fd109";
+    adjustTxValues(tx);
+
+    string privkey = "440ec6f6dc87dda4d2918a07d115ae4d290e290bd92e70e851eeb23de59d955a";
+    uint8_t *privkeyBytes;
+    hexstrToByteArray(privkey.c_str(), 64, &privkeyBytes);
     char inp [privkey.length()] = {};
 	memcpy(inp,privkey.c_str(),privkey.length());
     char dest [sizeof(inp)/2] = {};
 	rlp.hex2bin(inp,dest);
-	 //std::cout << rlp.bytesToHex(string(dest,sizeof(dest))) << std::endl;
-    uint8_t privatekey[32] = {227, 49, 182, 214, 152, 130, 180, 203, 78, 165, 129, 216, 142, 11, 96, 64, 57, 163, 222, 89, 103, 104, 141, 61, 207, 253, 210, 39, 12, 15, 209, 9};
-   // uint8_t privatekey[32] = {9, 209, 15, 12, 39, 210, 253, 207, 61, 141, 104, 103, 89, 222, 163, 57, 64, 96, 11, 142, 216, 129, 165, 78, 203, 180, 130, 152, 214, 182, 49, 227};
-   // uint8_t privatekey[32] = {9, 209, 15, 12, 39, 210, 253, 207, 61, 141, 104, 103, 89, 222, 163, 57, 64, 96, 11, 142, 216, 129, 165, 78, 203, 180, 130, 152, 214, 182, 49, 227};
-    //uint8_t kval[32] = {197, 78, 238, 100, 243, 130, 96, 226, 175, 137, 148, 101, 57, 228, 37, 26, 116, 153, 136, 188, 166, 214, 191, 222, 104, 105, 178, 65, 19, 159, 143, 152};
-    //privatekey[0] = (uint8_t)atoi(dest);
-   // charArrtoUint(dest,privatekey);
-    uint8_t hashval[32] = {200, 215, 201, 225, 52, 171, 175, 175, 142, 42, 131, 206, 158, 34, 122, 14, 203, 193, 134, 242, 88, 247, 143, 196, 28, 14, 93, 150, 35, 218, 22, 86};
-  //  uint8_t hashval[32] = {86, 22, 218, 35, 150, 93, 14, 28, 196, 143, 247, 88, 242, 134, 193, 203, 14, 122, 34, 158, 206, 131, 42, 142, 175, 175, 171, 52, 225, 201, 215, 200};
-    //uint8_t hashval[32] = {86, 22, 218, 35, 150, 93, 14, 28, 196, 143, 247, 88, 242, 134, 193, 203, 14, 122, 34, 158, 206, 131, 42, 142, 175, 175, 171, 52, 225, 201, 215, 200};
-    uint8_t sig[64] = {0};
-    uint8_t recid[1] = {0};
-    //uECC_sign(privatekey, hashval, sizeof(hashval), kval, sig, uECC_secp256k1(), recid);
-   // uint8_t v = recid[0]==1 ? 28:27;
-   // cout<<rlp.intToHex(v)<<endl;
+
+    string txRLP = rlp.encode(tx,false);
+    Keccak k;
+    std::string myHash  = k(txRLP);
+    uint8_t *hashBytes;
+    hexstrToByteArray(myHash.c_str(), 64, &hashBytes);
+
     uint8_t r[32];
     uint8_t s[64];
-    //ecdsaSign2(5);
-    //ecdsaSign(r,s,r,s);
-    ecdsaSign((BigNum256)r, (BigNum256)s, (BigNum256)hashval, (BigNum256)privatekey);
-   // cout << rlp.bytesToHex(string(uintToCharArr(s,32),32)) << "\n";
-    //splitArray(sig,r,0,32);
-   // splitArray(sig,s,32,64);
-    tx.v = "0x1b";//+rlp.intToHex(v);
-    tx.r = "0x"+rlp.bytesToHex(string(uintToCharArr(r,32),32));
-    tx.s = "0x"+rlp.bytesToHex(string(uintToCharArr(s,32),32));
-    //string temp = string(sig,sizeof(sig));
-    //cout<<tx.v<<" "<<tx.r<<" "<<tx.s<<"\n" ;
-   //cout<<rlp.bytesToHex(rlp.encode(tx,false));
-   // std::cout << rlp.bytesToHex(string(uintToCharArr(sig),64)) << std::endl;
+    uint8_t recId;
 
-	//cout << rlp.encodeLength(5, 60) << "\n";
-	//cout << rlp.intToHex(5) << "\n";
-	//string s = rlp.encode("\255");
-	//s = rlp.string_to_hex(s);
-	//cout << s << endl;
-	//Keccak k;
-	//std::cout << k("\0") << std::endl;
-	//std::cout << rlp.string_to_hex(rlp.hexToRlpEncode(tx.nonce)) << std::endl;
-	//out << rlp.string_to_hex(rlp.encode((string)dest)) << endl;
-	//std::cout << (string)dest << std::endl;
+    ecdsaSign((BigNum256)r, (BigNum256)s, (BigNum256)hashBytes, (BigNum256)privkeyBytes, &recId);
+    reverse(r, 32);
+    reverse(s, 32);
+    char* rCharArr = uintToCharArr(r,32);
+    char* sCharArr = uintToCharArr(s,32);
+    int vInt = EIP_155_OFFSET + (int) recId + 2 * tx.chainId;
+    char *vChar = (char *) calloc(50,1);
+    snprintf(vChar,50,"%x",vInt);
+
+    tx.v = string(vChar);
+    tx.r = "0x"+rlp.bytesToHex(string(rCharArr,32));
+    tx.s = "0x"+rlp.bytesToHex(string(sCharArr,32));
+    cout << "r is " << tx.r << endl;
+    cout << "s is " << tx.s << endl;
+    free(rCharArr);
+    free(sCharArr);
+    cout << "transaction signed is " << rlp.bytesToHex(rlp.encode(tx,false)) << endl;
 }
 
 

@@ -28,8 +28,9 @@
 #include "common.h"
 #include "bignum256.h"
 #include "ecdsa.h"
-#include "endian.h"
+#include "newendian.h"
 #include "hmac_drbg.h"
+#include "stdio.h"
 
 /** A point on the elliptic curve, in Jacobian coordinates. The
   * Jacobian coordinates (x, y, z) are related to affine coordinates
@@ -373,7 +374,7 @@ void printUint(uint8_t *nm, uint8_t vsize){
         printf("%d ",nm[i]);
     printf("\n","");
 }
-void ecdsaSign(BigNum256 r, BigNum256 s, const BigNum256 hash, const BigNum256 private_key)
+void ecdsaSign(BigNum256 r, BigNum256 s, const BigNum256 hash, const BigNum256 private_key, uint8_t *parity)
 {
 	PointAffine big_r;
 	uint8_t k[32];
@@ -416,11 +417,14 @@ void ecdsaSign(BigNum256 r, BigNum256 s, const BigNum256 hash, const BigNum256 p
 		// Compute ephemeral elliptic curve key pair (k, big_r).
 		setToG(&big_r);
 		pointMultiply(&big_r, k);
+		*parity = big_r.y[0] & 1;
+
 		//printUint(big_r.x,32);
 		//swapEndian256(big_r.x);
 		// big_r now contains k * G.
 		setFieldToN();
 		bigModulo(r, big_r.x);
+
 		//printUint(r,32);
 		// r now contains (k * G).x (mod n).
 		if (bigIsZero(r))
@@ -435,6 +439,7 @@ void ecdsaSign(BigNum256 r, BigNum256 s, const BigNum256 hash, const BigNum256 p
 		bigInvert(big_r.y, k);
 		bigMultiply(s, s, big_r.y);
 
+
 		if (bigIsZero(s))
 		{
 			continue;
@@ -447,7 +452,6 @@ void ecdsaSign(BigNum256 r, BigNum256 s, const BigNum256 hash, const BigNum256 p
 		{
 			bigSubtractNoModulo(s, (BigNum256)secp256k1_n, s);
 		}
-		printUint(s,32);
 		break;
 	}
 }

@@ -12,7 +12,7 @@
 
 #include "common.h"
 #include "hash.h"
-#include "endian.h"
+#include "newendian.h"
 
 /** Clear the message buffer.
   * \param hs The hash state to act on.
